@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Transparenter Schneefall</title>
+<style>
+  html, body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: transparent !important;
+  }
+  canvas {
+    display: block;
+    width: 100vw;
+    height: 100vh;
+    background: transparent;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+<canvas id="snow"></canvas>
+<script>
+(() => {
+  const canvas = document.getElementById('snow');
+  const ctx = canvas.getContext('2d');
+  let width, height, flakes = [];
+  const FLAKE_COUNT = 150;
+
+  function resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = Math.round(width * dpr);
+    canvas.height = Math.round(height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    flakes = Array.from({ length: FLAKE_COUNT }, () => makeFlake(true));
+  }
+
+  function makeFlake(randomY = false) {
+    const depth = Math.random();
+    return {
+      x: Math.random() * width,
+      y: randomY ? Math.random() * height : -10,
+      radius: 1 + depth * 3.2,
+      speed: 0.7 + depth * 2.2,
+      drift: (Math.random() - 0.5) * 0.8,
+      sway: Math.random() * Math.PI * 2,
+      swaySpeed: 0.008 + Math.random() * 0.018,
+      opacity: 0.45 + depth * 0.5
+    };
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, width, height);
+
+    for (const f of flakes) {
+      f.sway += f.swaySpeed;
+      f.x += f.drift + Math.sin(f.sway) * 0.45;
+      f.y += f.speed;
+
+      if (f.y > height + 10) {
+        Object.assign(f, makeFlake(false));
+      }
+      if (f.x < -10) f.x = width + 10;
+      if (f.x > width + 10) f.x = -10;
+
+      ctx.beginPath();
+      ctx.fillStyle = `rgba(255,255,255,${f.opacity})`;
+      ctx.shadowColor = 'rgba(220,240,255,0.75)';
+      ctx.shadowBlur = f.radius * 2;
+      ctx.arc(f.x, f.y, f.radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.shadowBlur = 0;
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+  draw();
+})();
+</script>
+</body>
+</html>
